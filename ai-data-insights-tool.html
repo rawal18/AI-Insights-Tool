@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Data Insights Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f6fa;--surface:#ffffff;--surface2:#f0f2f8;--surface3:#e8eaf2;
+  --border:#e2e5f0;--border2:#d0d4e8;
+  --accent:#4f46e5;--accent2:#6366f1;--accent-light:#eef2ff;
+  --green:#059669;--yellow:#d97706;--red:#dc2626;--blue:#2563eb;
+  --text:#1e1e2e;--muted:#6b7280;--radius:12px;--radius-sm:8px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.app{max-width:1100px;margin:0 auto;padding:32px 24px}
+
+/* HEADER */
+.header{text-align:center;padding:48px 0 40px;position:relative}
+.header::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:700px;height:320px;background:radial-gradient(ellipse at center,rgba(99,102,241,0.07) 0%,transparent 70%);pointer-events:none}
+.header-badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent-light);border:1px solid #c7d2fe;border-radius:20px;padding:5px 14px;font-size:11px;color:var(--accent2);font-family:'DM Mono',monospace;letter-spacing:0.5px;margin-bottom:20px}
+.header-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.header h1{font-family:'Syne',sans-serif;font-size:40px;font-weight:700;letter-spacing:-1px;line-height:1.1;margin-bottom:14px;color:var(--text)}
+.header h1 em{font-style:normal;color:var(--accent2)}
+.header p{font-size:15px;color:var(--muted);max-width:480px;margin:0 auto}
+
+/* API KEY */
+.api-setup{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:28px;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+.api-setup-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px}
+.api-setup-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+.api-row{display:flex;gap:10px}
+.api-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color 0.2s}
+.api-input:focus{border-color:var(--accent)}
+.api-input::placeholder{color:#adb5bd}
+.btn-save-key{background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:background 0.2s}
+.btn-save-key:hover{background:#4338ca}
+.key-saved{display:none;align-items:center;gap:8px;font-size:12px;color:var(--green);margin-top:10px}
+.key-saved.show{display:flex}
+
+/* UPLOAD */
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius);padding:40px 24px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--surface);margin-bottom:16px;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.upload-zone::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(99,102,241,0.04),transparent 60%);pointer-events:none}
+.upload-zone:hover{border-color:var(--accent);background:#fafbff}
+.upload-icon{font-size:36px;margin-bottom:12px;display:block}
+.upload-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;margin-bottom:6px;color:var(--text)}
+.upload-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+.upload-sub span{color:var(--accent2);font-weight:500}
+.btn-upload{background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);padding:11px 26px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;box-shadow:0 2px 12px rgba(79,70,229,0.2)}
+.btn-upload:hover{background:#4338ca;transform:translateY(-1px)}
+.upload-hint{font-size:11px;color:#adb5bd;margin-top:12px;font-family:'DM Mono',monospace}
+
+/* FILE BAR */
+.file-bar{display:none;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:20px;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.file-bar.show{display:flex}
+.file-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+.file-name{color:var(--accent2);font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
+.file-meta{color:var(--muted);margin-left:auto;font-size:11px;font-family:'DM Mono',monospace}
+
+/* OVERVIEW CARDS */
+.overview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+.overview-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;opacity:0;transform:translateY(8px);transition:opacity 0.4s ease,transform 0.4s ease;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.overview-card.anim{opacity:1;transform:translateY(0)}
+.ov-accent{display:block;width:32px;height:2px;border-radius:2px;margin-bottom:10px}
+.ov-label{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);font-weight:500;margin-bottom:8px}
+.ov-value{font-family:'Syne',sans-serif;font-size:24px;font-weight:700;color:var(--text);line-height:1}
+.ov-value small{font-size:13px;font-family:'DM Sans',sans-serif;font-weight:400;color:var(--muted)}
+
+/* PANELS */
+.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;opacity:0;transform:translateY(8px);transition:opacity 0.5s ease,transform 0.5s ease;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+.panel.anim{opacity:1;transform:translateY(0)}
+.panel.full{grid-column:1/-1}
+.panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
+.panel-title{font-size:13px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:8px}
+.panel-body{padding:20px}
+
+/* BUTTONS */
+.btn-generate{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);padding:10px 22px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;box-shadow:0 2px 10px rgba(79,70,229,0.2)}
+.btn-generate:hover{background:#4338ca;box-shadow:0 4px 16px rgba(79,70,229,0.3)}
+.btn-generate:disabled{opacity:0.45;cursor:not-allowed;box-shadow:none}
+.btn-sm{font-size:12px;padding:7px 14px}
+
+/* SPINNER */
+.generating{display:none;align-items:center;gap:10px;font-size:13px;color:var(--muted);padding:16px 0}
+.generating.show{display:flex}
+.spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 24px}
+.empty-icon{font-size:28px;opacity:0.25;margin-bottom:10px}
+.empty-text{font-size:13px;color:var(--muted)}
+
+/* SUMMARY */
+.summary-text{font-size:13px;color:#374151;line-height:1.9;display:none}
+.summary-text strong{color:var(--text);font-weight:600}
+
+/* COLUMN TABLE */
+.col-table{width:100%;border-collapse:collapse;font-size:12px}
+.col-table th{padding:8px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.col-table td{padding:9px 12px;color:var(--text);border-bottom:1px solid var(--border)}
+.col-table tr:last-child td{border-bottom:none}
+.col-table tr:hover td{background:#fafbff}
+.type-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-family:'DM Mono',monospace}
+.type-num{background:#eef2ff;color:#4f46e5}
+.type-text{background:#eff6ff;color:#2563eb}
+.type-date{background:#f0fdf4;color:#059669}
+
+/* PATTERNS */
+.pattern-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+.pattern-card:last-child{margin-bottom:0}
+.pattern-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.pattern-type{font-size:10px;text-transform:uppercase;letter-spacing:0.6px;font-weight:600;margin-bottom:3px}
+.pattern-type.info{color:var(--blue)}.pattern-type.warn{color:var(--yellow)}.pattern-type.good{color:var(--green)}.pattern-type.alert{color:var(--red)}
+.pattern-text{font-size:13px;color:#4b5563;line-height:1.5}
+.pattern-text strong{color:var(--text);font-weight:600}
+
+/* CHAT */
+.chat-suggestions{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.suggestion{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);cursor:pointer;transition:all 0.2s;font-family:'DM Mono',monospace}
+.suggestion:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.chat-messages{height:320px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;background:#fafbff}
+.chat-messages::-webkit-scrollbar{width:4px}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.msg{max-width:85%;padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.6;animation:msgIn 0.2s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{background:var(--accent);color:white;margin-left:auto;border-radius:12px 12px 2px 12px}
+.msg.ai{background:white;border:1px solid var(--border);color:var(--text);margin-right:auto;border-radius:12px 12px 12px 2px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.msg.ai strong{color:var(--accent);font-weight:600}
+.msg.thinking{color:var(--muted);font-style:italic}
+.chat-input-row{padding:14px 16px;border-top:1px solid var(--border);display:flex;gap:10px;background:var(--surface2)}
+.chat-input{flex:1;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;transition:border-color 0.2s}
+.chat-input:focus{border-color:var(--accent)}
+.chat-input::placeholder{color:#adb5bd}
+.btn-send{background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);padding:10px 18px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background 0.2s;white-space:nowrap}
+.btn-send:hover{background:#4338ca}
+.btn-send:disabled{opacity:0.4;cursor:not-allowed}
+
+/* REPORT */
+.report-bar{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:40px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.btn-report{display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:var(--radius-sm);padding:11px 22px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
+.btn-report:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+
+/* FOOTER */
+.footer{text-align:center;padding:24px 0 16px;font-size:12px;color:var(--muted);border-top:1px solid var(--border)}
+.footer span{color:var(--accent)}
+
+@media(max-width:768px){
+  .main-grid{grid-template-columns:1fr}
+  .panel.full{grid-column:1}
+  .overview-grid{grid-template-columns:repeat(2,1fr)}
+  .header h1{font-size:28px}
+  .api-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-badge"><div class="header-badge-dot"></div> Powered by Claude AI</div>
+    <h1>AI Data <em>Insights</em> Tool</h1>
+    <p>Upload any CSV — get an instant AI summary, chat with your data, and auto-detect patterns and anomalies.</p>
+  </div>
+
+  <div class="api-setup" id="apiSetup">
+    <div class="api-setup-title">🔑 Enter your Claude API Key</div>
+    <div class="api-setup-sub">Your key is stored in your browser and auto-loaded next time. Never shared anywhere except Anthropic's API. Get yours free at console.anthropic.com</div>
+    <div class="api-row">
+      <input type="password" class="api-input" id="apiKeyInput" placeholder="sk-ant-api03-..."/>
+      <button class="btn-save-key" id="btnSaveKey" onclick="saveKey()">Save Key</button>
+    </div>
+    <div class="key-saved" id="keySaved">✓ API key saved — you are ready to go!</div>
+    <div style="margin-top:8px;font-size:11px;color:#adb5bd">Want to use a different key? <span onclick="clearKey()" style="color:var(--accent);cursor:pointer;text-decoration:underline">Clear saved key</span></div>
+  </div>
+
+  <div class="upload-zone" onclick="document.getElementById('csvIn').click()">
+    <span class="upload-icon">📊</span>
+    <div class="upload-title">Upload any CSV dataset</div>
+    <div class="upload-sub">Works with sales, healthcare, finance, HR — <span>any data</span></div>
+    <button class="btn-upload" onclick="event.stopPropagation();document.getElementById('csvIn').click()">Choose CSV File</button>
+    <div class="upload-hint">csv files only · your data never leaves your browser</div>
+    <input type="file" id="csvIn" accept=".csv" style="display:none" onchange="handleFile(this)"/>
+  </div>
+
+  <div class="file-bar" id="fileBar">
+    <div class="file-dot"></div>
+    <span class="file-name" id="fileName"></span>
+    <span class="file-meta" id="fileMeta"></span>
+  </div>
+
+  <div id="dashboard" style="display:none">
+
+    <div class="overview-grid">
+      <div class="overview-card"><span class="ov-accent" style="background:var(--accent)"></span><div class="ov-label">Total Rows</div><div class="ov-value" id="ovRows">—</div></div>
+      <div class="overview-card"><span class="ov-accent" style="background:var(--green)"></span><div class="ov-label">Columns</div><div class="ov-value" id="ovCols">—</div></div>
+      <div class="overview-card"><span class="ov-accent" style="background:var(--blue)"></span><div class="ov-label">Numeric Columns</div><div class="ov-value" id="ovNum">—</div></div>
+      <div class="overview-card"><span class="ov-accent" style="background:var(--yellow)"></span><div class="ov-label">Missing Values</div><div class="ov-value" id="ovMissing">—</div></div>
+    </div>
+
+    <div class="main-grid">
+
+      <div class="panel full">
+        <div class="panel-header">
+          <div class="panel-title">🤖 AI Summary</div>
+          <button class="btn-generate" id="btnSummary" onclick="generateSummary()">✨ Generate Summary</button>
+        </div>
+        <div class="panel-body">
+          <div class="generating" id="summaryLoading"><div class="spinner"></div> Claude is reading your data...</div>
+          <div class="empty" id="summaryEmpty"><div class="empty-icon">🤖</div><div class="empty-text">Click Generate Summary to get an AI-written overview of your dataset</div></div>
+          <div class="summary-text" id="summaryText"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📋 Column Overview</div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Sample Values</th></tr></thead><tbody id="colTableBody"></tbody></table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🔍 Patterns and Anomalies</div>
+          <button class="btn-generate btn-sm" id="btnPatterns" onclick="generatePatterns()">Detect Patterns</button>
+        </div>
+        <div class="panel-body">
+          <div class="generating" id="patternsLoading"><div class="spinner"></div> Scanning for patterns...</div>
+          <div class="empty" id="patternsEmpty"><div class="empty-icon">🔍</div><div class="empty-text">Click Detect Patterns to auto-find anomalies and trends</div></div>
+          <div id="patternsList" style="display:none"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="panel full anim" style="margin-bottom:28px">
+      <div class="panel-header">
+        <div class="panel-title">💬 Chat with your data</div>
+        <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace" id="chatCount">0 messages</span>
+      </div>
+      <div class="chat-suggestions" id="suggestions"></div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg ai">👋 Hi! Upload your dataset and I will help you explore it. You can ask me anything — totals, trends, outliers, comparisons, and more.</div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chatInput" placeholder="Ask a question about your data..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"/>
+        <button class="btn-send" id="btnSend" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+
+    <div class="report-bar">
+      <div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:4px">Export Report</div>
+        <div style="font-size:12px;color:var(--muted)">Download a shareable HTML report with all insights and chat history</div>
+      </div>
+      <button class="btn-report" onclick="generateReport()">📄 Download Report</button>
+    </div>
+
+  </div>
+
+  <div class="footer">Built with <span>Claude AI</span> · AI Data Insights Tool · Portfolio Project</div>
+</div>
+
+<script>
+let apiKey='',allData=[],headers=[],currentFile='';
+let summaryText='',patternsList=[],chatHistory=[],msgCount=0;
+
+function saveKey(){
+  const k=document.getElementById('apiKeyInput').value.trim();
+  if(!k||!k.startsWith('sk-')){alert('Please enter a valid API key starting with sk-');return;}
+  apiKey=k;
+  localStorage.setItem('cdip_api_key',k);
+  document.getElementById('keySaved').textContent='✓ API key saved — you are ready to go! (remembered for next time)';
+  document.getElementById('keySaved').classList.add('show');
+  document.getElementById('apiKeyInput').value='sk-ant-...'+k.slice(-4);
+  document.getElementById('apiKeyInput').disabled=true;
+  document.getElementById('btnSaveKey').textContent='Saved';
+  document.getElementById('btnSaveKey').disabled=true;
+  setTimeout(()=>{ document.getElementById('apiSetup').style.display='none'; }, 1000);
+}
+
+function loadSavedKey(){
+  const saved=localStorage.getItem('cdip_api_key');
+  if(saved&&saved.startsWith('sk-')){
+    apiKey=saved;
+    document.getElementById('apiSetup').style.display='none';
+  }
+}
+
+function clearKey(){
+  localStorage.removeItem('cdip_api_key');
+  apiKey='';
+  const setup=document.getElementById('apiSetup');
+  if(setup) setup.style.display='block';
+  const input=document.getElementById('apiKeyInput');
+  if(input){input.value='';input.disabled=false;}
+  const btn=document.getElementById('btnSaveKey');
+  if(btn){btn.textContent='Save Key';btn.disabled=false;}
+  const saved=document.getElementById('keySaved');
+  if(saved) saved.classList.remove('show');
+}
+
+window.addEventListener('load', loadSavedKey);
+
+function parseCSV(text){
+  const lines=text.trim().split('\n');
+  const hdrs=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+  return{
+    headers:hdrs,
+    rows:lines.slice(1).filter(l=>l.trim()).map(l=>{
+      const vals=l.split(',').map(v=>v.trim().replace(/^"|"$/g,''));
+      const obj={};hdrs.forEach((h,i)=>obj[h]=vals[i]||'');
+      return obj;
+    })
+  };
+}
+
+function detectType(col,rows){
+  const vals=rows.map(r=>r[col]).filter(v=>v&&v!=='');
+  if(!vals.length)return'text';
+  if(vals.filter(v=>!isNaN(parseFloat(v))).length/vals.length>0.8)return'numeric';
+  if(vals.filter(v=>!isNaN(Date.parse(v))&&v.length>4).length/vals.length>0.7)return'date';
+  return'text';
+}
+
+function countMissing(rows,hdrs){
+  let c=0;rows.forEach(r=>hdrs.forEach(h=>{if(!r[h]||r[h].trim()==='')c++;}));return c;
+}
+
+function getDataSample(maxRows=80){
+  return headers.join(',')+'\n'+allData.slice(0,maxRows).map(r=>headers.map(h=>r[h]||'').join(',')).join('\n');
+}
+
+function handleFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const parsed=parseCSV(e.target.result);
+    headers=parsed.headers;allData=parsed.rows;currentFile=file.name;
+    document.getElementById('fileName').textContent=file.name;
+    document.getElementById('fileMeta').textContent=allData.length.toLocaleString()+' rows · '+headers.length+' columns';
+    document.getElementById('fileBar').classList.add('show');
+    document.getElementById('dashboard').style.display='block';
+
+    const numCols=headers.filter(h=>detectType(h,allData)==='numeric').length;
+    const missing=countMissing(allData,headers);
+    document.getElementById('ovRows').textContent=allData.length.toLocaleString();
+    document.getElementById('ovCols').textContent=headers.length;
+    document.getElementById('ovNum').textContent=numCols;
+    document.getElementById('ovMissing').innerHTML=missing>0?missing+'<small> cells</small>':'None';
+
+    document.getElementById('colTableBody').innerHTML=headers.map(h=>{
+      const type=detectType(h,allData);
+      const sample=allData.slice(0,3).map(r=>r[h]).filter(Boolean).join(', ');
+      const cls=type==='numeric'?'type-num':type==='date'?'type-date':'type-text';
+      return'<tr><td style="font-family:\'DM Mono\',monospace;font-size:11px">'+h+'</td><td><span class="type-badge '+cls+'">'+type+'</span></td><td style="color:var(--muted);font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(sample||'—')+'</td></tr>';
+    }).join('');
+
+    const numH=headers.filter(h=>detectType(h,allData)==='numeric');
+    const suggs=['Summarize this dataset',numH.length?'What is the average '+numH[0]+'?':'What are the most common values?','Are there any outliers or anomalies?','What trends do you see?','Which column has the most missing data?'];
+    document.getElementById('suggestions').innerHTML=suggs.map(s=>'<span class="suggestion" onclick="useSuggestion(\''+s.replace(/'/g,"\\'")+'\')" >'+s+'</span>').join('');
+
+    document.querySelectorAll('.overview-card,.panel').forEach((el,i)=>setTimeout(()=>el.classList.add('anim'),i*60));
+
+    summaryText='';patternsList=[];chatHistory=[];msgCount=0;
+    document.getElementById('summaryText').style.display='none';
+    document.getElementById('summaryText').innerHTML='';
+    document.getElementById('summaryEmpty').style.display='block';
+    document.getElementById('patternsEmpty').style.display='block';
+    document.getElementById('patternsList').style.display='none';
+    document.getElementById('chatMessages').innerHTML='<div class="msg ai">👋 Dataset loaded! I can see <strong>'+allData.length.toLocaleString()+' rows</strong> and <strong>'+headers.length+' columns</strong>: '+headers.slice(0,5).join(', ')+(headers.length>5?'...':'')+'. Ask me anything!</div>';
+    updateChatCount();
+  };
+  reader.readAsText(file);
+}
+
+async function callClaude(systemPrompt,userPrompt,maxTokens=1000){
+  if(!apiKey){alert('Please save your API key first.');return null;}
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens,system:systemPrompt,messages:[{role:'user',content:userPrompt}]})
+    });
+    const data=await res.json();
+    if(data.error){alert('API Error: '+data.error.message);return null;}
+    return data.content[0].text;
+  }catch(e){alert('Connection error: '+e.message);return null;}
+}
+
+async function generateSummary(){
+  const btn=document.getElementById('btnSummary');
+  btn.disabled=true;
+  document.getElementById('summaryEmpty').style.display='none';
+  document.getElementById('summaryText').style.display='none';
+  document.getElementById('summaryLoading').classList.add('show');
+
+  const system='You are an expert data analyst with 10 years of experience. Analyze CSV datasets and explain findings clearly to business stakeholders. Always reference specific numbers. Use **bold** for key findings.';
+  const prompt='Analyze this dataset step by step:\n1. Understand what the dataset is about\n2. Identify key columns and what they represent\n3. Calculate important statistics\n4. Note data quality issues\n\nDataset: '+currentFile+'\nColumns: '+headers.join(', ')+'\nTotal rows: '+allData.length+'\n\nSample data:\n'+getDataSample(80)+'\n\nRespond in this exact format (under 200 words):\n**What this dataset contains:** ...\n**Key statistics:** ...\n**Notable observations:** ...\n**Data quality:** ...';
+
+  const result=await callClaude(system,prompt,1000);
+  document.getElementById('summaryLoading').classList.remove('show');
+  if(result){
+    summaryText=result;
+    const el=document.getElementById('summaryText');
+    el.innerHTML=result.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    el.style.display='block';
+    btn.innerHTML='↺ Regenerate';
+  }
+  btn.disabled=false;
+}
+
+async function generatePatterns(){
+  const btn=document.getElementById('btnPatterns');
+  btn.disabled=true;
+  document.getElementById('patternsEmpty').style.display='none';
+  document.getElementById('patternsList').style.display='none';
+  document.getElementById('patternsLoading').classList.add('show');
+
+  const system='You are a data quality and pattern detection expert. Find patterns, anomalies, correlations, and interesting findings. Be specific with actual values from the data.';
+  const prompt='Scan this dataset for patterns. Return EXACTLY 5 findings as a JSON array with these fields: "type" (one of: info, warn, good, alert), "label" (short category), "text" (one sentence with **bold** key values).\n\nDataset: '+currentFile+'\nColumns: '+headers.join(', ')+'\nRows: '+allData.length+'\nSample:\n'+getDataSample(80)+'\n\nReturn ONLY a valid JSON array, no other text:\n[{"type":"...","label":"...","text":"..."},...]';
+
+  const result=await callClaude(system,prompt,800);
+  document.getElementById('patternsLoading').classList.remove('show');
+  if(result){
+    try{
+      const patterns=JSON.parse(result.replace(/```json|```/g,'').trim());
+      patternsList=patterns;
+      const icons={info:'ℹ️',warn:'⚠️',good:'✅',alert:'🚨'};
+      document.getElementById('patternsList').innerHTML=patterns.map(p=>'<div class="pattern-card"><div class="pattern-icon">'+(icons[p.type]||'📌')+'</div><div><div class="pattern-type '+p.type+'">'+p.label+'</div><div class="pattern-text">'+p.text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')+'</div></div></div>').join('');
+      document.getElementById('patternsList').style.display='block';
+      btn.innerHTML='↺ Re-scan';
+    }catch(e){
+      document.getElementById('patternsList').innerHTML='<div class="empty"><div class="empty-text">Could not parse patterns. Please try again.</div></div>';
+      document.getElementById('patternsList').style.display='block';
+    }
+  }
+  btn.disabled=false;
+}
+
+function useSuggestion(text){document.getElementById('chatInput').value=text;sendChat();}
+function updateChatCount(){msgCount++;document.getElementById('chatCount').textContent=msgCount+' message'+(msgCount!==1?'s':'');}
+
+function appendMsg(role,text){
+  const el=document.createElement('div');
+  el.className='msg '+role;
+  if(role==='ai')el.innerHTML=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  else el.textContent=text;
+  document.getElementById('chatMessages').appendChild(el);
+  document.getElementById('chatMessages').scrollTop=99999;
+  return el;
+}
+
+async function sendChat(){
+  const input=document.getElementById('chatInput');
+  const q=input.value.trim();
+  if(!q||!apiKey)return;
+  input.value='';
+  document.getElementById('btnSend').disabled=true;
+  appendMsg('user',q);
+  updateChatCount();
+  chatHistory.push({role:'user',content:q});
+  const thinking=appendMsg('ai','Thinking...');
+  thinking.classList.add('thinking');
+
+  const system='You are an expert data analyst. Answer questions about the provided CSV dataset precisely. Reference specific numbers. Use **bold** for key findings. Keep answers under 120 words unless more detail is needed. Never invent statistics — only use what is in the data.';
+  const dataContext='Dataset: '+currentFile+'\nColumns: '+headers.join(', ')+'\nTotal rows: '+allData.length+'\nSample data:\n'+getDataSample(60)+'\n\nQuestion: '+q;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system,messages:[...chatHistory.slice(-5,chatHistory.length-1),{role:'user',content:dataContext}]})
+    });
+    const data=await res.json();
+    thinking.remove();
+    if(data.error){appendMsg('ai','Error: '+data.error.message);}
+    else{
+      const answer=data.content[0].text;
+      chatHistory.push({role:'assistant',content:answer});
+      appendMsg('ai',answer);
+      updateChatCount();
+    }
+  }catch(e){thinking.remove();appendMsg('ai','Connection error. Check your API key and try again.');}
+  document.getElementById('btnSend').disabled=false;
+}
+
+function generateReport(){
+  const chatHTML=Array.from(document.getElementById('chatMessages').querySelectorAll('.msg')).map(m=>'<div style="margin-bottom:12px;padding:10px 14px;background:'+(m.classList.contains('user')?'#6c63ff':'#f1f5f9')+';color:'+(m.classList.contains('user')?'white':'#1a1a2e')+';border-radius:8px;font-size:13px;max-width:80%;'+(m.classList.contains('user')?'margin-left:auto':'')+'">'+(m.classList.contains('user')?m.textContent:m.innerHTML)+'</div>').join('');
+  const patternsHTML=patternsList.map(p=>'<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:8px;font-size:13px"><strong>'+p.label+':</strong> '+p.text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')+'</div>').join('');
+  const colRows=headers.map(h=>'<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;font-family:monospace;font-size:12px">'+h+'</td><td style="padding:8px 12px;border-bottom:1px solid #eee">'+detectType(h,allData)+'</td><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px">'+allData.slice(0,2).map(r=>r[h]).filter(Boolean).join(', ')+'</td></tr>').join('');
+
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>AI Insights Report — '+currentFile+'</title><style>body{font-family:\'Segoe UI\',sans-serif;max-width:900px;margin:40px auto;padding:0 24px;color:#1a1a2e;line-height:1.6}h1{font-size:28px;margin-bottom:4px}h2{font-size:16px;font-weight:600;margin:32px 0 12px;padding-bottom:6px;border-bottom:2px solid #6c63ff;color:#6c63ff}.meta{font-size:13px;color:#666;margin-bottom:32px}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}.kpi{background:#f8f9fa;border-radius:8px;padding:16px;border-left:3px solid #6c63ff}.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:6px}.kpi-value{font-size:22px;font-weight:700}table{width:100%;border-collapse:collapse}th{background:#f8f9fa;padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888}</style></head><body><h1>📊 AI Data Insights Report</h1><div class="meta">Dataset: <strong>'+currentFile+'</strong> · Generated: '+new Date().toLocaleString()+' · Powered by Claude AI</div><div class="kpi-grid"><div class="kpi"><div class="kpi-label">Total Rows</div><div class="kpi-value">'+allData.length.toLocaleString()+'</div></div><div class="kpi"><div class="kpi-label">Columns</div><div class="kpi-value">'+headers.length+'</div></div><div class="kpi"><div class="kpi-label">Numeric Cols</div><div class="kpi-value">'+headers.filter(h=>detectType(h,allData)==='numeric').length+'</div></div><div class="kpi"><div class="kpi-label">Missing Values</div><div class="kpi-value">'+(countMissing(allData,headers)||'None')+'</div></div></div>'+(summaryText?'<h2>AI Summary</h2><div style="font-size:14px;line-height:1.8;padding:16px;background:#f8f9fa;border-radius:8px">'+summaryText.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')+'</div>':'')+(patternsHTML?'<h2>Patterns and Anomalies</h2>'+patternsHTML:'')+'<h2>Column Overview</h2><table><thead><tr><th>Column</th><th>Type</th><th>Sample Values</th></tr></thead><tbody>'+colRows+'</tbody></table>'+(chatHTML?'<h2>Chat History</h2><div>'+chatHTML+'</div>':'')+'</body></html>';
+
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+  a.download='insights-report-'+currentFile.replace('.csv','')+'-'+new Date().toISOString().slice(0,10)+'.html';
+  a.click();
+}
+</script>
+</body>
+</html>
